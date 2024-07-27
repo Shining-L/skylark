@@ -37,8 +37,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'cadets',
     'api',
-    'rest_framework'
+    'rest_framework',
+    'drf_spectacular'
 ]
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -50,6 +54,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 AUTH_USER_MODEL = "cadets.Users"
+
 
 ROOT_URLCONF = 'drf_skylark_backend.urls'
 
@@ -123,3 +128,30 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# api接口配置
+SPECTACULAR_SETTINGS = {
+    'TITLE': '天雀api',
+    'DESCRIPTION': '天雀管理后台接口',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'PREPROCESSING_HOOKS': [],
+    'POSTPROCESSING_HOOKS': [],
+    'COMPONENT_SPLIT_REQUEST': True,
+    'ENUM_NAME_OVERRIDES': {},
+    'MODEL_DEPTH': 2,
+    'MODEL_NAME_OVERRIDES': {},
+    'TAGS': [],
+    'SECURITY': [],
+    'SECURITY_DEFINITIONS': {},
+    'LICENSE_INFO': {},
+    'CONTACT_INFO': {},
+    'SERVERS': [
+        {
+            'url': 'http://localhost:8000',
+            'description': 'Local server',
+        },
+    ],
+    'SWAGGER_UI_SETTINGS': {},
+    'REDOC_SETTINGS': {},
+}
