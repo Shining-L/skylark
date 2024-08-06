@@ -56,13 +56,26 @@ MIDDLEWARE = [
 CORS_ORIGIN_ALLOW_ALL = True
 AUTH_USER_MODEL = "cadets.Users"
 
+SIMPLEUI_HOME_INFO = False
+SIMPLEUI_ANALYSIS = False
+
+# 修改DRF认证
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # 使用rest_framework_simplejwt(token)验证身份
+        'rest_framework.authentication.SessionAuthentication',  # 基于用户名密码认证方式
+        'rest_framework.authentication.BasicAuthentication'  # 基于Session认证方式
+    ],
+}
+
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_EXPIRE_REMEMBER_ME': timedelta(days=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
-
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': 'secret',
     'VERIFYING_KEY': None,
@@ -70,7 +83,6 @@ SIMPLE_JWT = {
     'ISSUER': None,
     'JWK_URL': None,
     'LEEWAY': 0,
-
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',

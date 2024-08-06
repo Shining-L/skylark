@@ -19,10 +19,6 @@ class Users(AbstractUser):
         to_field="id",
         on_delete=models.SET_NULL, null=True, blank=True)
 
-    def __str__(self):
-        return self.name
-
-
 class Characters(models.Model):
     name = models.CharField(verbose_name="角色名称", max_length=64)
     note = models.TextField(verbose_name="备注", null=True)
@@ -98,7 +94,7 @@ class StudentManage(models.Model):
     desc = models.TextField(null=True, blank=True)
     create_time = models.DateTimeField(auto_now_add=True)
     update_time = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         db_table = "student_manage"
         verbose_name = "学员管理"
