@@ -63,8 +63,6 @@ SIMPLEUI_ANALYSIS = False
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',  # 使用rest_framework_simplejwt(token)验证身份
-        'rest_framework.authentication.SessionAuthentication',  # 基于用户名密码认证方式
-        'rest_framework.authentication.BasicAuthentication'  # 基于Session认证方式
     ],
 }
 
@@ -87,12 +85,9 @@ SIMPLE_JWT = {
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
-
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
-
     'JTI_CLAIM': 'jti',
-
     'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
@@ -170,6 +165,15 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# 七牛云配置
+QINIU_SETTINGS = {
+    "access_key": "ZcO5sGkTnBsxXdytwZK8TvSZPaP-vQNbBxsmfwYE",
+    "secret_key": "b6RW1XyrIUMaZikztiHlM2Arv-mdX7t9YMNHYlqe",
+    "bucket_name": "hkry",
+    "host": "images.hkaiyun.com"
+}
+
 
 # api接口配置
 SPECTACULAR_SETTINGS = {

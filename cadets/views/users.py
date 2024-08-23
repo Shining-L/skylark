@@ -1,102 +1,130 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from api.config.pagination import Pagination
-from cadets.serializers import UserSerializer
-from cadets.models import Users, Characters
-from django.contrib.auth.hashers import make_password
 from rest_framework import status
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from cadets.models import Users, Role
+from cadets.serializers import UserSerializer
+from api.config.pagination import Pagination
+from django.contrib.auth.hashers import make_password
+
 
 class UserView(APIView):
-    def get(self, request):
-        res = {
-            'code': 200,
-            'msg': ' success',
-            'data': [],
-            'total': 0
-        }
-        username = request.GET.get('username')
-        currentPage = request.GET.get('currentPage') or 1
-        pageSize = request.GET.get('pageSize') or 10
+    authentication_classes = [JWTAuthentication]
 
-        if username:
-            user_query = Users.objects.filter(username__contains=username)
+    def get(self, request, pk=None):
+        if pk:
+            user = Users.objects.filter(id=pk).first()
+            if user:
+                serializer = UserSerializer(user)
+                return Response({
+                    "code": 0,
+                    "msg": "success",
+                    "data": serializer.data
+                })
+            else:
+                return Response({"msg": "用户不存在"}, status=status.HTTP_404_NOT_FOUND)
         else:
-            user_query = Users.objects.all()
-        total = user_query.count()
-        pager = Pagination(
-            limit=int(pageSize),
-            all_count=int(total),
-            current_page=int(currentPage)
-        )
+            name = request.GET.get('name')
+            currentPage = request.GET.get('page') or 1
+            pageSize = request.GET.get('pageSize') or 10
 
-        user_list = user_query[pager.start: pager.end]
-        serializer = UserSerializer(instance=user_list, many=True)
-        res['data'] = serializer.data
-        res['total'] = total
-        res['code'] = 200
-        return Response(res)
+            if name:
+                user_query = Users.objects.filter(name__contains=name)
+            else:
+                user_query = Users.objects.all()
+            total = user_query.count()
+            pager = Pagination(limit=int(pageSize), all_count=int(total), current_page=int(currentPage))
+
+            user_list = user_query[pager.start: pager.end]
+            serializer = UserSerializer(instance=user_list, many=True)
+
+            return Response({
+                "code": 0,
+                "msg": "success",
+                "data": {
+                    "total": total,
+                    "rows": serializer.data
+                }
+            })
 
     def post(self, request):
-        res = {
-            'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
-            'msg': '增加成功',
-            'data': {}
-        }
-        role = request.data.get('role')
-        char = Characters.objects.filter(name=role).first()
-
-        username = request.data.get('username')
+        username = request.data.get('userName')
         password = request.data.get('password')
-        # 使用 make_password 加密密码
-        if password and not password.isdigit():
-            hashed_password = make_password(password)
+        name = request.data.get('name')  # 获取员工姓名
+        phonenumber = request.data.get('phonenumber')  # 获取联系方式
+        roleId = request.data.get('roleId')
 
-        else:
-            return Response({'msg': '您的密码太常见啦'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # 判断是否是重复名
+        # 验证用户名是否已存在
         if Users.objects.filter(username=username).exists():
             return Response({"msg": "用户名已存在"}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            # 创建新用户
-            user = Users.objects.create_user(username=username, password=hashed_password)
-            user.role = char
-            user.is_active = True
-            user.save()
-            ser = UserSerializer(instance=user, data=request.data)
-            if ser.is_valid():
-                ser.save()
-                res['code'] = status.HTTP_200_OK
-                res['data'] = ser.data
+
+        # 验证密码
+        if not password or len(password) < 6:
+            return Response({'msg': '密码必须至少6个字符'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 获取角色
+        role = Role.objects.filter(id=roleId).first()
+        if not role:
+            return Response({'msg': '指定的角色不存在'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user = Users.objects.create(
+                username=username,
+                password=make_password(password),  # 使用make_password确保密码被正确哈希
+                role=role,
+                is_active=True,
+                name=name,
+                phone=phonenumber
+            )
+            serializer = UserSerializer(instance=user)
+            return Response({
+                "code": 0,
+                "msg": "用户添加成功",
+                "data": {
+                    "total": 1,
+                    "rows": [serializer.data]
+                }
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({
+                "code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+                "msg": f'添加用户时发生错误: {str(e)}',
+                "data": {}
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def put(self, request, pk=None):
+        if pk:
+            user = Users.objects.filter(id=pk).first()
+            if not user:
+                return Response({'msg': '用户不存在'}, status=status.HTTP_404_NOT_FOUND)
+
+            serializer = UserSerializer(instance=user, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    "code": 0,
+                    "msg": "编辑成功",
+                    "data": serializer.data
+                })
             else:
-                res['msg'] = ser.errors
-        return Response(res, status=status.HTTP_201_CREATED)
-
-    def put(self, request):
-        res = {
-            'code': 500,
-            'msg': '编辑成功',
-            'data': {}
-        }
-        id = request.data.get('id')
-        role = request.data.get('role')
-        char = Characters.objects.filter(name=role).first()
-        user_obj = Users.objects.filter(id=id).first()
-        user_obj.role = char
-        user_obj.save()
-        ser = UserSerializer(instance=user_obj, data=request.data)
-        if ser.is_valid():
-            ser.save()
-            res['code'] = 200
-            res['data'] = ser.data
+                return Response({
+                    "msg": serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
         else:
-            res['msg'] = ser.errors
-        return Response(res)
+            return Response({"msg": "未提供用户 ID"}, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request):
-        id = request.query_params.get('id')
-        user_query = Users.objects.filter(id=id)
-        if not user_query:
-            return Response({'msg':'用户不存在'},status=404)
-        user_query.delete()
-        return Response({})
+    def delete(self, request, pk=None):
+        if pk:
+            user_query = Users.objects.filter(id=pk)
+            if user_query.exists():
+                user_query.delete()
+                return Response({
+                    "code": 0,
+                    "msg": "用户已删除"
+                }, status=status.HTTP_204_NO_CONTENT)
+            else:
+                return Response({'msg': '用户不存在'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({"msg": "未提供用户 ID"}, status=status.HTTP_400_BAD_REQUEST)
+
+
