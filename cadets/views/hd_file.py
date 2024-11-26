@@ -2,11 +2,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
 from utils.handle_files import save_file
 
 
 class UploadFile(APIView):
     authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    # 写一个post请求
 
     def post(self, request):
         # 检查是否有文件上传

@@ -9,6 +9,8 @@ from cadets.models import LearningStatus
 import json, math
 from decimal import Decimal
 from cadets.models import Users
+from django.db import transaction
+
 
 def save_files(file):
     qi = settings.QINIU_SETTINGS
@@ -37,7 +39,11 @@ def map_learning_status(status):
 
 
 def parse_date(date_str):
+    print(date_str)
     try:
+
+        if isinstance(date_str, str):
+            return datetime.strptime(date_str, "%Y-%m-%d")
         return datetime.strptime(date_str, '%Y-%m-%d').date()
     except ValueError:
         return None
@@ -46,13 +52,15 @@ def parse_date(date_str):
 def preprocess_age(age_str):
     try:
         age = int(age_str)
-        return age if age > 0 else None
+        return age if age > 0 else 0  # 如果是0或负数，默认返回18
     except (ValueError, TypeError):
-        return None
-
+        return 0
 
 def preprocess_phone_number(phone_str):
+    if pd.isna(phone_str) or phone_str == 'nan':
+        return '无'
     try:
+
         # 如果电话号码是字符串
         if isinstance(phone_str, str):
             # 尝试将其转换为整数
@@ -66,6 +74,14 @@ def preprocess_phone_number(phone_str):
                 return None
             # 如果不是 NaN，尝试将其转换为整数
             phone_number = int(phone_str)
+            # 如果转换成功，返回电话号码
+            return phone_number
+        elif isinstance(phone_str, int):
+            # 检查是否为 NaN
+            if math.isnan(phone_str):
+                return None
+            # 如果不是 NaN，尝试将其转换为整数
+            phone_number = str(phone_str)
             # 如果转换成功，返回电话号码
             return phone_number
         # 如果电话号码既不是字符串也不是浮点数，则返回 None
@@ -181,8 +197,8 @@ def save_file(file, request):
 
         file.seek(0)
 
-        df = pd.read_excel(io.BytesIO(file_content), parse_dates=['报名日期'])
-
+        df = pd.read_excel(io.BytesIO(file_content))
+        print(df)
         # 应用预处理
 
         df['年龄'] = df['年龄'].apply(preprocess_age)
@@ -195,57 +211,53 @@ def save_file(file, request):
 
         df['服务记录'] = df['服务记录'].apply(preprocess_json)
 
-        df['电话号码'] = df['电话号码'].apply(preprocess_phone_number)  # 应用电话号码预处理
+        df['电话号码'] = df['电话号码'].apply(preprocess_phone_number)
 
         df['报名日期'] = df['报名日期'].apply(lambda x: x.date() if pd.notna(x) else None)
 
-        # 过滤掉包含 NaN 的行
-
         # 过滤有效行
         valid_rows = [row for _, row in df.iterrows() if is_valid_row(row)]
+        students = []
 
         # 处理有效行
         for row in valid_rows:
 
-            try:
+            student = StudentManage(
 
-                student = StudentManage(
+                phone_number=row.get('电话号码'),
 
-                    phone_number=row.get('电话号码'),
+                name=row.get('学员姓名'),
 
-                    name=row.get('学员姓名'),
+                learning_status=map_learning_status(row.get('学习状态')),
 
-                    learning_status=map_learning_status(row.get('学习状态')),
+                registration_date=row.get('报名日期'),
 
-                    registration_date=row.get('报名日期'),
+                wechat_nickname=row.get('微信昵称'),
 
-                    wechat_nickname=row.get('微信昵称'),
+                age=row.get('年龄'),
 
-                    age=row.get('年龄'),
+                amount_due=row.get('应付金额'),
 
-                    amount_due=row.get('应付金额'),
+                amount_paid=row.get('已付金额'),
 
-                    amount_paid=row.get('已付金额'),
+                amount_outstanding=row.get('欠缴金额'),
 
-                    amount_outstanding=row.get('欠缴金额'),
+                receptionist=row.get('接待'),
 
-                    receptionist=row.get('接待'),
+                class_teacher=row.get('班主任'),
 
-                    class_teacher=row.get('班主任'),
+                lecturer=row.get('讲师'),
 
-                    lecturer=row.get('讲师'),
+                course_name=row.get('课程名称'),
 
-                    course_name=row.get('课程名称'),
+                service_record_images=row.get('服务记录'),
+                desc=None,
+                submitter=submitter
+            )
+            students.append(student)
+        with transaction.atomic():
+            StudentManage.objects.bulk_create(students)
 
-                    service_record_images=row.get('服务记录'),
-                    desc=None,
-                    submitter=submitter
-                )
 
-                student.save()
 
-            except Exception as e:
 
-                print(f"保存学生数据失败: {e}")
-
-                continue

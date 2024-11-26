@@ -1,17 +1,18 @@
 from cadets.views import (students,
                           users,
-                          personal,batch,hd_file, roles, sk_permission)
-from django.urls import path, include
-from .views import login, u_role,rest
+                          batch, hd_file, roles, sk_permission)
+from django.urls import path
+from .views import login, u_role, rest, profile
+from personnel.views import inter_api_view
 
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
     TokenVerifyView
-        )
-
+)
 
 urlpatterns = [
     # 获取Token的接口
+
     path('login/', login.MyObtainTokenPairView.as_view(), name='login'),
     # 刷新Token有效期的接口
     path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
@@ -21,11 +22,11 @@ urlpatterns = [
     path('user/', users.UserView.as_view()),
     path('user/<int:pk>', users.UserView.as_view()),
     path('user/reset_password/<int:pk>/', rest.ResetPasswordView.as_view(), name='reset_password'),
-
-    path('personal/', personal.PersonalView.as_view()),
+    path('user/upd_pwd/', rest.UpdatePasswordView.as_view(), name="upd_pwd"),
+    path('userprofile/', profile.UserProfileView.as_view()),
     # 角色接口
     path('roles/', roles.CharacterList.as_view()),
-    path('role/<int:pk>',roles.CharacterDetail.as_view()),
+    path('role/<int:pk>', roles.CharacterDetail.as_view()),
     path('roleUser/<int:pk>', u_role.RoleUserView.as_view()),
     path('menus/', sk_permission.GetPermissionsTreeView.as_view()),
     # 学员相关
@@ -35,4 +36,7 @@ urlpatterns = [
     path('cadets/batch-delete/', batch.BatchDeleteView.as_view(), name='batch-delete'),
     # csv
     path('upload_csv/', hd_file.UploadFile.as_view(), name='upload_csv'),
+    # 面试登记相关
+    path('inter/', inter_api_view.InterView.as_view(), name='interview-list-create'),  # GET, POST
+    path('inter/<int:pk>/', inter_api_view.InterView.as_view(), name='interview-detail'),  # GET, PUT, DELETE
 ]

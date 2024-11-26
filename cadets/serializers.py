@@ -1,9 +1,7 @@
 from .models import Users, Role
 import pytz
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
-
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -15,21 +13,14 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         return refresh_token
 
     def validate(self, attrs):
-        print(f"尝试验证用户: {attrs.get('username')}")
-
         # 使用authenticate函数进行用户验证
         user = authenticate(username=attrs.get('username'), password=attrs.get('password'))
 
         if user is None:
-            print(f"用户验证失败: {attrs.get('username')}")
-            raise serializers.ValidationError("无法找到具有给定凭据的活动账户")
+            raise serializers.ValidationError("用户名或密码错误")
 
-        if not user.is_active:
-            print(f"用户账户未激活: {user.username}")
+        if user.status == 0:
             raise serializers.ValidationError("您的账户已被禁用，无法登录。")
-
-        print(f"用户验证成功: {user.username}")
-
         self.user = user
         data = super().validate(attrs)
 
@@ -40,6 +31,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         return data
 
+
 class UserSerializer(serializers.ModelSerializer):
     roleName = serializers.CharField(source='role.name', required=False, allow_null=True)
     roleId = serializers.IntegerField(source='role.id', required=False, allow_null=True)
@@ -49,7 +41,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Users
-        fields = ['id', 'name', 'phonenumber', 'roleId','roleName', 'status', 'userName', 'create_time']
+        fields = ['id', 'name', 'phonenumber', 'roleId', 'roleName', 'status', 'userName', 'create_time']
 
     def get_create_time(self, obj):
         # 转换为尼泊尔标准时间
@@ -72,7 +64,6 @@ class UserSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
-
 
 class CharactersSerializer(serializers.ModelSerializer):
     class Meta:

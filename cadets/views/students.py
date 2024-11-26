@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
 from cadets.models import StudentManage, Users
@@ -11,7 +12,8 @@ from drf_skylark_backend.settings import QINIU_SETTINGS
 
 
 class StudentView(APIView):
-    authentication_classes = [JWTAuthentication]  # 添加认证类
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, pk=None):
         res = {
@@ -23,7 +25,7 @@ class StudentView(APIView):
         if pk is not None:
             # 获取单个学生信息
             student = get_object_or_404(StudentManage, id=pk)
-            submitter_name = student.submitter.username if student.submitter else None
+            submitter_name = student.submitter.name if student.submitter else None
             data = {
                 "id": student.id,
                 'learning_status': student.learning_status,
@@ -60,6 +62,7 @@ class StudentView(APIView):
 
             phone_number = request.query_params.get('phone') or ''
             cadets_status = request.query_params.get('learning_status') or ''
+            course_name = request.query_params.get('course_name') or ''
 
             # 过滤查询条件
             filters = {}
@@ -73,8 +76,11 @@ class StudentView(APIView):
             if cadets_status:
                 filters['learning_status'] = cadets_status
 
+            if course_name:
+                filters['course_name__icontains'] = course_name
+
             # 使用过滤条件获取查询集
-            queryset = StudentManage.objects.filter(**filters)
+            queryset = StudentManage.objects.filter(**filters).order_by('-create_time')
 
             # 使用过滤后的查询集来获取总数
             total = queryset.count()
@@ -202,7 +208,6 @@ class StudentView(APIView):
                 ret = save_files(file)
                 image_urls.append(ret['key'])
 
-        # 删除指定的图片（这里可能需要额外的逻辑来实际删除文件）
         for deleted_image in deleted_images:
             if deleted_image in image_urls:
                 image_urls.remove(deleted_image)
@@ -241,6 +246,7 @@ class StudentView(APIView):
                 'msg': '更新失败！',
                 'data': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def delete(self, request, pk=None):
         # 获取要删除的学生实例
         student = get_object_or_404(StudentManage, id=pk)

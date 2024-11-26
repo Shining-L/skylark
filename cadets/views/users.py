@@ -126,5 +126,3 @@ class UserView(APIView):
                 return Response({'msg': '用户不存在'}, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response({"msg": "未提供用户 ID"}, status=status.HTTP_400_BAD_REQUEST)
-
-

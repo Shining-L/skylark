@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'api',
     'rest_framework',
     'rest_framework_simplejwt',
-    'corsheaders'
+    'corsheaders',
+    'personnel'
 ]
 
 MIDDLEWARE = [
@@ -62,8 +63,8 @@ SIMPLEUI_ANALYSIS = False
 # 修改DRF认证
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',  # 使用rest_framework_simplejwt(token)验证身份
-    ],
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ]
 }
 
 
@@ -123,7 +124,10 @@ DATABASES = {
         'NAME': "skylark",
         "HOST": "127.0.0.1",
         "POST": "3306",
-        "PASSWORD": "mysql123"
+        "PASSWORD": "mysql123",
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        },
     }
 }
 
@@ -160,7 +164,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
-
+STATICFILES_DIRS = [BASE_DIR / "static"]
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 

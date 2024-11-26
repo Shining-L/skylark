@@ -24,26 +24,19 @@ class Users(AbstractUser):
         on_delete=models.SET_NULL, null=True, blank=True)
     status = models.IntegerField(choices=status_choice, default=1)
 
-# 定义权限组模型
 class PermissionGroup(models.Model):
-    # 每个权限组有一个唯一的名称
     name = models.CharField(max_length=50, unique=True)
 
-    # 当模型实例被转换为字符串时返回其名称
     def __str__(self):
         return self.name
 
 
-# 定义权限模型，它能够包含子权限
 class Permission(models.Model):
-    # 权限名称
     name = models.CharField(max_length=50)
-    # 权限所属的组
     group = models.ForeignKey(PermissionGroup, on_delete=models.CASCADE, related_name='permissions')
-    # 可能存在的父权限（允许为空）
+    route = models.CharField(max_length=255, unique=True, blank=True, null=True)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
 
-    # 当模型实例被转换为字符串时返回其名称和所属的权限组
     def __str__(self):
         if self.parent:
             return f"{self.group.name} - {self.parent.name} - {self.name}"
@@ -51,34 +44,25 @@ class Permission(models.Model):
             return f"{self.group.name} - {self.name}"
 
 
-# 定义角色模型
 class Role(models.Model):
-    # 角色名称
     name = models.CharField(max_length=50)
-    remark = models.CharField(max_length=50)
-    # 角色与权限多对多关系
+    remark = models.CharField(max_length=50,null=True)
     permissions = models.ManyToManyField(Permission, through='RolePermission')
 
-    # 当模型实例被转换为字符串时返回其名称
     def __str__(self):
         return self.name
 
 
-# 定义角色权限模型
 class RolePermission(models.Model):
-    # 角色与权限之间的关系
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
     permission = models.ForeignKey(Permission, on_delete=models.CASCADE)
-    # 是否激活此权限
     is_active = models.BooleanField(default=True)
 
-    # 确保每个角色与权限的组合唯一
     class Meta:
         unique_together = ('role', 'permission')
 
-    # 当模型实例被转换为字符串时返回其角色名称和权限名称
     def __str__(self):
-        return f"{self.role.name} - {self.permission}"
+        return f"{self.role.name} - {self.permission.name}"
 
 
 class LearningStatus(models.IntegerChoices):
@@ -130,7 +114,7 @@ class StudentManage(models.Model):
     # 课程名称，字符型字段，最大长度为100，用于记录学生所选的课程名称
     course_name = models.CharField(max_length=100, null=True, blank=True)
 
-    # 服务记录图像，图像字段，上传到'service_record_images'目录下，允许为空和不上传
+    # 服务记录图像，图像字段，
     service_record_images = models.JSONField(blank=True, default=list)
     # 提交人
     submitter = models.ForeignKey(

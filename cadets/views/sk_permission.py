@@ -2,9 +2,13 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from cadets.models import PermissionGroup, Permission
-
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 class GetPermissionsTreeView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permissions_classes = [IsAuthenticated]
+
     def get(self, request):
         try:
             permissions_tree = self.build_permissions_tree()
@@ -32,6 +36,7 @@ class GetPermissionsTreeView(APIView):
                 "children": []
             }
 
+            # 获取顶层权限
             top_level_permissions = Permission.objects.filter(group=group, parent=None)
             for permission in top_level_permissions:
                 permission_node = self.build_permission_node(permission)
@@ -45,12 +50,13 @@ class GetPermissionsTreeView(APIView):
         node = {
             "id": permission.id,
             "title": permission.name,
-            "children": []
+            "children": []  # 初始化子权限列表
         }
 
-        children = Permission.objects.filter(parent=permission)
-        for child in children:
-            child_node = self.build_permission_node(child)
+        # 获取当前权限的子权限
+        child_permissions = Permission.objects.filter(parent=permission)
+        for child in child_permissions:
+            child_node = self.build_permission_node(child)  # 递归调用
             node["children"].append(child_node)
 
         return node

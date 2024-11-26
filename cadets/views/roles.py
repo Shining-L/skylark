@@ -5,9 +5,12 @@ from cadets.models import Role
 from cadets.serializers import CharactersSerializer
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.exceptions import NotFound
+from rest_framework.permissions import IsAuthenticated
+
 
 class CharacterList(APIView):
     authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         characters = Role.objects.all()
@@ -41,9 +44,9 @@ class CharacterList(APIView):
             return Response({'msg': '操作成功', 'data': updated_role}, status=status.HTTP_201_CREATED)
         return Response({'msg': '操作失败', 'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+
 class CharacterDetail(APIView):
     authentication_classes = [JWTAuthentication]
-
 
     def get(self, request, pk):
         try:
